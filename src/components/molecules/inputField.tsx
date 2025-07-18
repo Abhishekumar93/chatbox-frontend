@@ -1,4 +1,4 @@
-import { FC, memo, ReactNode } from 'react';
+import { FC, HTMLInputAutoCompleteAttribute, memo, ReactNode } from 'react';
 import { Form, InputGroup } from 'react-bootstrap';
 
 interface IInputField {
@@ -7,10 +7,15 @@ interface IInputField {
   placeholder?: string;
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  icon?: ReactNode;
+  icon?: ReactNode | string;
   name: string;
   error?: string;
   disabled?: boolean;
+  hidden?: boolean;
+  additionalInfoText?: string;
+  defaultValue?: string;
+  autoComplete?: HTMLInputAutoCompleteAttribute;
+  formGroupClassName?: string;
 }
 
 const InputField: FC<IInputField> = ({
@@ -23,11 +28,14 @@ const InputField: FC<IInputField> = ({
   name,
   error,
   disabled,
+  hidden,
+  additionalInfoText,
+  defaultValue,
+  autoComplete,
+  formGroupClassName,
 }) => {
-  console.log('InputField', name);
-
   return (
-    <Form.Group className="mb-3" controlId={name}>
+    <Form.Group hidden={hidden} className={formGroupClassName ?? 'mb-3'}>
       {label && <Form.Label>{label}</Form.Label>}
       <InputGroup>
         {icon && <InputGroup.Text>{icon}</InputGroup.Text>}
@@ -40,7 +48,15 @@ const InputField: FC<IInputField> = ({
           onChange={onChange}
           isInvalid={!!error}
           disabled={disabled}
+          className={!icon ? 'rounded' : 'rounded-end'}
+          defaultValue={defaultValue}
+          autoComplete={autoComplete}
         />
+        {additionalInfoText && (
+          <Form.Text id={`${name}Text`} className="text-info">
+            {additionalInfoText}
+          </Form.Text>
+        )}
         {error && (
           <Form.Control.Feedback type="invalid">{error}</Form.Control.Feedback>
         )}

@@ -1,0 +1,8 @@
+.message-form {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  position: sticky;
+  bottom: 0.5rem;
+  width: 100%;
+}

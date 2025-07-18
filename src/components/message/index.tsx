@@ -1,5 +1,14 @@
-const UsersListWithMessage = () => {
-  return <h1>Users List With Message</h1>;
+'use client';
+
+import { useDeviceType } from '@/hooks/useDeviceType';
+import { UsersList } from '../userList';
+
+const MessageComponent = () => {
+  const { isMobile } = useDeviceType();
+
+  if (!isMobile) return null;
+
+  return <UsersList />;
 };
 
-export default UsersListWithMessage;
+export default MessageComponent;

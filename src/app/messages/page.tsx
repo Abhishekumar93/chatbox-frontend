@@ -1,7 +1,7 @@
-import UsersListWithMessage from '@/components/message';
+import MessageComponent from '@/components/message';
 
 const MessageListPage = () => {
-  return <UsersListWithMessage />;
+  return <MessageComponent />;
 };
 
 export default MessageListPage;
