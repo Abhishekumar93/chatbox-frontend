@@ -25,10 +25,18 @@ const axiosInstance: AxiosInstance = axios.create({
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
+    console.log(
+      error,
+      'error from axios interceptor',
+      error.response?.status === 401,
+    );
+
     if (
-      error.response?.status === 401 &&
-      typeof window !== 'undefined' &&
-      ![LOGIN, REGISTER].includes(window.location.href)
+      error.response?.status === 401
+      //    &&
+      //   typeof window !== 'undefined' &&
+      //   ![LOGIN, REGISTER].includes(window.location.href),
+      // window.location
     ) {
       let logOutResponseStatus = 400;
       postApi('/api/auth/logout').then(
@@ -50,7 +58,7 @@ axiosInstance.interceptors.response.use(
 const fetchApi = async (
   method: RestApiEnum,
   apiUrl: string,
-  body: any = null,
+  body: any = {},
   headers: Record<string, string> = {},
 ) => {
   const config: AxiosRequestConfig = {
@@ -73,7 +81,7 @@ export const postApi = (apiUrl: string, body: any = {}, headers: any = {}) =>
   });
 
 export const getApi = (apiUrl: string, headers: any = {}) =>
-  fetchApi(RestApiEnum.GET, apiUrl, null, headers);
+  fetchApi(RestApiEnum.GET, apiUrl, {}, headers);
 
 export const putApi = (apiUrl: string, body: any = {}, headers: any = {}) =>
   fetchApi(RestApiEnum.PUT, apiUrl, body, headers);
