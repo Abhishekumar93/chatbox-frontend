@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import ShimmerCard from '../shimmerCard';
 import { getApi } from '@/utils/restApi';
 import { UserDetail } from '@/interfaceAndTypes/user';
@@ -9,41 +9,38 @@ import Link from 'next/link';
 import Style from './userList.module.css';
 import { usePathname } from 'next/navigation';
 import { ROUTE_URLS } from '@/constants/routeUrls';
+import { useApiProgressDetail } from '@/hooks/useApiProgressDetail';
 
 export const UsersList = () => {
   const pathname = usePathname();
+  const { isApiInProgress, setIsApiInProgress } = useApiProgressDetail();
 
   const [users, setUsers] = useState<UserDetail[]>([]);
   const [isUsersListFetched, setIsUsersListFetched] = useState<boolean>(false);
-  const [isApiFetchInProgress, setIsApiFetchInProgress] =
-    useState<boolean>(false);
 
-  useEffect(() => {
-    setIsApiFetchInProgress(true);
-  }, []);
-  useEffect(() => {
-    if (!isApiFetchInProgress) return;
-    getUsersList();
-  }, [isApiFetchInProgress]);
-
-  const getUsersList = async () => {
+  const getUsersList = useCallback(async () => {
     let data: UserDetail[] = [];
-
+    setIsApiInProgress(true);
     try {
       const response = await getApi('/users/list');
       if (response?.data) {
-        data = response?.data?.users;
+        data = response?.data?.data?.users;
       }
     } catch (error) {
       data = [];
     } finally {
       setUsers(data);
       setIsUsersListFetched(true);
-      setIsApiFetchInProgress(false);
+      setIsApiInProgress(false);
     }
-  };
+  }, []);
 
-  if (!isUsersListFetched) {
+  useEffect(() => {
+    if (isUsersListFetched || isApiInProgress) return;
+    getUsersList();
+  }, [isUsersListFetched, isApiInProgress, getUsersList]);
+
+  if (isApiInProgress) {
     return (
       <div className="px-3">
         {Array.from({ length: 5 }).map((_, index) => (
@@ -52,6 +49,8 @@ export const UsersList = () => {
       </div>
     );
   }
+
+  if (!isUsersListFetched) return null;
 
   const displayUsersList = () => {
     if (users.length === 0) {

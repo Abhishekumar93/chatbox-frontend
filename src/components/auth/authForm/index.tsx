@@ -5,11 +5,7 @@ import InputField from '@/components/molecules/inputField';
 import { LOCAL_STORAGE_KEY } from '@/constants/localStorage';
 import { ROUTE_URLS } from '@/constants/routeUrls';
 import { FormType } from '@/interfaceAndTypes/form';
-import {
-  clearLocalStorage,
-  removeLocalStorage,
-  setLocalStorage,
-} from '@/utils/localStorage';
+import { clearLocalStorage, setLocalStorage } from '@/utils/localStorage';
 import { getApi, postApi } from '@/utils/restApi';
 import { useRouter } from 'next/navigation';
 import {
@@ -97,13 +93,18 @@ const handleFormSubmit = async (prevState: IFormState, formData: FormData) => {
   formData.delete('formType');
   formData.set('password', btoa(password));
   try {
-    await postApi(`/auth/${formType}`, formData);
-    toast.success(
-      `User ${
-        formType === 'register' ? 'registered' : 'logged in'
-      } succesfully!`,
-    );
-    initialState.apiSuccess = true;
+    const response = await postApi(`/auth/${formType}`, formData);
+    if (response.status === 200) {
+      toast.success(
+        `User ${
+          formType === 'register' ? 'registered' : 'logged in'
+        } succesfully!`,
+      );
+      initialState.apiSuccess = true;
+    } else {
+      toast.error('Soething went wrong. Please try again.');
+      initialState.apiSuccess = false;
+    }
   } catch (error: any) {
     toast.error(error?.message);
     initialState.apiSuccess = false;
@@ -132,14 +133,18 @@ const AuthForm: FC<IAuthForm> = ({
     clearLocalStorage();
   }, []);
   useEffect(() => {
+    console.log(isPending, 'state response', state);
+
     if (isPending || !state.apiSuccess) return;
     if (formType === 'login') {
       getApi('/users/currentUser')
         .then((response) => {
-          setLocalStorage(LOGGED_IN_USER_DATA, response.data);
+          console.log('response', response);
+
+          setLocalStorage(LOGGED_IN_USER_DATA, response.data?.data);
         })
         .catch((error) => {
-          removeLocalStorage(LOGGED_IN_USER_DATA);
+          clearLocalStorage();
         });
     }
     location.href = formType === 'register' ? LOGIN : MESSAGES;
