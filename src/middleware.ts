@@ -6,6 +6,7 @@ const { LOGIN, REGISTER, MESSAGES } = ROUTE_URLS;
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
+  console.log(token, 'token from middleware');
 
   const publicRoutes = [LOGIN, REGISTER];
 
@@ -13,10 +14,7 @@ export function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith(route),
   );
 
-  if (!token && !isPublicRoute) {
-    const loginUrl = new URL(LOGIN, request.url);
-    return NextResponse.redirect(loginUrl);
-  } else if (token && isPublicRoute) {
+  if (token && isPublicRoute) {
     return NextResponse.redirect(new URL(MESSAGES, request.url));
   } else {
     request.headers.set('Authorization', `Bearer ${token}`);

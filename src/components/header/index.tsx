@@ -25,14 +25,20 @@ export const Header = () => {
     const isAuthUrl = [LOGIN, REGISTER].includes(window.location.pathname);
     if (isAuthUrl) return;
 
-    setUser(getLocalStorage(LOCAL_STORAGE_KEY.LOGGED_IN_USER_DATA));
+    const userData = getLocalStorage(LOCAL_STORAGE_KEY.LOGGED_IN_USER_DATA);
+    if (!userData) {
+      handleLogout();
+      return;
+    }
+    setUser(userData);
   }, []);
 
   const handleLogout = async () => {
     try {
-      const response = await postApi('/auth/logout');
-      console.log('response', response);
-
+      const userId = getLocalStorage(
+        LOCAL_STORAGE_KEY.LOGGED_IN_USER_DATA,
+      )?._id;
+      const response = await postApi('/auth/logout', { id: btoa(userId) });
       if (response.status === 200) {
         clearLocalStorage();
         setUser(null);

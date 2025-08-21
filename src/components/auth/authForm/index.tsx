@@ -133,14 +133,10 @@ const AuthForm: FC<IAuthForm> = ({
     clearLocalStorage();
   }, []);
   useEffect(() => {
-    console.log(isPending, 'state response', state);
-
     if (isPending || !state.apiSuccess) return;
     if (formType === 'login') {
       getApi('/users/currentUser')
         .then((response) => {
-          console.log('response', response);
-
           setLocalStorage(LOGGED_IN_USER_DATA, response.data?.data);
         })
         .catch((error) => {

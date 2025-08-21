@@ -7,6 +7,8 @@ import socket from '@/utils/socket';
 import messageStyle from './message.module.css';
 import { Button, Form } from 'react-bootstrap';
 import InputField from '@/components/molecules/inputField';
+import { getLocalStorage } from '@/utils/localStorage';
+import { LOCAL_STORAGE_KEY } from '@/constants/localStorage';
 
 const UserMessageDetailPage = ({
   params,
@@ -25,23 +27,28 @@ const UserMessageDetailPage = ({
   const [isTyping, setIsTyping] = useState<boolean>(false);
   const [message, setMessage] = useState<string>('');
 
+  const loggedInUserId = getLocalStorage(
+    LOCAL_STORAGE_KEY.LOGGED_IN_USER_DATA,
+  )?._id;
+
   useEffect(() => {
+    socket.on('connect', () => {
+      socket.emit('register', loggedInUserId);
+    });
     socket.on('chat message', (message: any) => {
       setMessageList((prevMessages: any) => [...prevMessages, message]);
     });
-    socket.on('typing', (data: boolean) => {
+    socket.on('typing', (data: { userId: string; status: boolean }) => {
       console.log(data, 'typing data');
 
-      setIsTyping(data);
+      setIsTyping(data.status);
     });
-    socket.on('stop_typing', (data: boolean) => {
-      setIsTyping(data);
+    socket.on('stop_typing', (data: { userId: string; status: boolean }) => {
+      setIsTyping(data.status);
     });
 
     return () => {
-      socket.off('chat message');
-      socket.off('typing');
-      socket.off('stop_typing');
+      socket.disconnect();
     };
   }, []);
   useEffect(() => {
@@ -66,10 +73,10 @@ const UserMessageDetailPage = ({
   const handleMessageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // const message = e.target.value;
     setMessage(e.target.value);
-    socket.emit('typing', true);
+    socket.emit('typing', { userId: loggedInUserId, status: true });
 
     const timer = setTimeout(() => {
-      socket.emit('stop_typing', false);
+      socket.emit('stop_typing', { userId: loggedInUserId, status: true });
     }, 1000);
 
     return () => clearTimeout(timer);
@@ -81,7 +88,7 @@ const UserMessageDetailPage = ({
     socket.emit('new_message', {
       content: message,
       chatId: id,
-      sender: currentUserDetail._id,
+      sender: getLocalStorage(LOCAL_STORAGE_KEY.LOGGED_IN_USER_DATA)._id,
     });
     setMessage('');
     socket.emit('stop_typing', false);
