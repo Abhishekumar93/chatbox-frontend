@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import InputField from '@/components/molecules/inputField';
@@ -19,103 +18,78 @@ import {
 import { Button, Form, Row } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 
-interface IAuthForm {
-  formTitle: string;
-  submitBtnLabel?: string;
-  btnLabel?: string;
-  redirectUrl?: string;
-  formType?: FormType;
-}
-
-interface IFormErrorOrValue {
-  email: string | undefined;
-  password: string | undefined;
+interface IFormError {
+  email?: string;
+  password?: string;
   username?: string;
   name?: string;
 }
+
 interface IFormState {
-  error: IFormErrorOrValue;
-  values: IFormErrorOrValue;
+  error: IFormError;
   apiSuccess: boolean;
 }
 
-const errorInitialState: IFormErrorOrValue = {
-  email: undefined,
-  password: undefined,
-  username: undefined,
-  name: undefined,
-};
-const valuesInitialState: IFormErrorOrValue = {
-  email: '',
-  password: '',
-  username: '',
-  name: '',
-};
 const initialState: IFormState = {
-  error: errorInitialState,
-  values: valuesInitialState,
+  error: {},
   apiSuccess: false,
 };
 
-const { LOGGED_IN_USER_DATA } = LOCAL_STORAGE_KEY;
-
-const handleFormSubmit = async (prevState: IFormState, formData: FormData) => {
+const handleFormSubmit = async (
+  prevState: IFormState,
+  formData: FormData,
+): Promise<IFormState> => {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
   const username = formData.get('username') as string;
   const name = formData.get('name') as string;
   const formType = formData.get('formType') as FormType;
 
-  const fieldError: IFormErrorOrValue = { ...errorInitialState };
+  const error: IFormError = {};
+
+  if (!email) error.email = 'Email is required';
+else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+  error.email = 'Email is not valid';
+
+  if (!password) error.password = 'Password is required';
+
   if (formType === 'register') {
-    if (!username) fieldError.username = 'Username is required';
-    if (!name) fieldError.name = 'Name is required';
-  }
-  if (!email) fieldError.email = 'Email is required!';
-  if (!password) fieldError.password = 'Password is required!';
-  if (
-    !email ||
-    !password ||
-    (formType === 'register' && (!username || !name))
-  ) {
-    return { error: fieldError, values: prevState.values, apiSuccess: false };
+    if (!username) error.username = 'Username is required';
+    if (!name) error.name = 'Name is required';
   }
 
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    fieldError.email = 'Email is not valid';
-    return {
-      error: fieldError,
-      values: prevState.values,
-      apiSuccess: false,
-    };
+  if (Object.keys(error).length > 0) {
+    return { ...prevState, error };
   }
 
-  formData.delete('formType');
-  formData.set('password', btoa(password));
+  const payload = {
+  email,
+  password: btoa(password),
+  ...(formType === 'register' && { username, name }),
+};
+
   try {
-    const response = await postApi(`/auth/${formType}`, formData);
+    const response = await postApi(`/auth/${formType}`, payload);
+
     if (response.status === 200) {
       toast.success(
-        `User ${
-          formType === 'register' ? 'registered' : 'logged in'
-        } succesfully!`,
+        `User ${formType === 'register' ? 'registered' : 'logged in'} successfully`,
       );
-      initialState.apiSuccess = true;
-    } else {
-      toast.error('Soething went wrong. Please try again.');
-      initialState.apiSuccess = false;
+      return { error: {}, apiSuccess: true };
     }
-  } catch (error: any) {
-    toast.error(error?.message);
-    initialState.apiSuccess = false;
-  } finally {
-    return initialState;
+
+    toast.error('Something went wrong');
+    return { ...prevState, apiSuccess: false };
+  } catch (err: any) {
+    toast.error(err?.message);
+    return { ...prevState, apiSuccess: false };
   }
 };
 
 const { LOGIN, MESSAGES } = ROUTE_URLS;
+const { LOGGED_IN_USER_DATA } = LOCAL_STORAGE_KEY;
 
-const AuthForm: FC<IAuthForm> = ({
+const AuthForm: FC<any> = ({
   submitBtnLabel,
   btnLabel,
   redirectUrl,
@@ -124,93 +98,79 @@ const AuthForm: FC<IAuthForm> = ({
 }) => {
   const router = useRouter();
 
-  const [state, formSubmitAction, isPending] = useActionState(
+  const [state, submitAction, isPending] = useActionState(
     handleFormSubmit,
     initialState,
   );
 
   useEffect(() => {
-    clearLocalStorage();
-  }, []);
-  useEffect(() => {
-    if (isPending || !state.apiSuccess) return;
+    if (!state.apiSuccess) return;
+
     if (formType === 'login') {
       getApi('/users/currentUser')
-        .then((response) => {
-          setLocalStorage(LOGGED_IN_USER_DATA, response.data?.data);
-        })
-        .catch((error) => {
-          clearLocalStorage();
-        });
+        .then((res) =>
+          setLocalStorage(LOGGED_IN_USER_DATA, res.data?.data),
+        )
+        .catch(clearLocalStorage);
     }
-    location.href = formType === 'register' ? LOGIN : MESSAGES;
-  }, [isPending]);
 
-  const onClick = () => {
-    if (!(redirectUrl || redirectUrl?.trim())) return;
-    router.push(redirectUrl.startsWith('/') ? redirectUrl : `/${redirectUrl}`);
-  };
-  const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
-    event.preventDefault();
-    const formData: FormData = new FormData(event.currentTarget);
-    startTransition(() => formSubmitAction(formData));
+    router.replace(formType === 'register' ? LOGIN : MESSAGES);
+  }, [state.apiSuccess, formType, router]);
+
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    startTransition(() => submitAction(formData));
   };
 
   return (
     <div className="d-flex flex-column justify-content-center align-items-center h-100">
       <div style={{ maxWidth: '20rem' }}>
         <h1 className="text-center mb-5">{formTitle}</h1>
+
         <Form onSubmit={handleSubmit}>
           <Row>
             {formType === 'register' && (
               <>
                 <InputField
                   name="username"
-                  placeholder="Enter your username"
                   label="Username"
-                  icon="@"
-                  additionalInfoText="Username should be unique without whitespace."
                   error={state.error.username}
-                  defaultValue={state.values.username}
-                  autoComplete="username"
                 />
                 <InputField
                   name="name"
-                  placeholder="Enter your name"
                   label="Name"
                   error={state.error.name}
-                  defaultValue={state.values.name}
-                  autoComplete="name"
                 />
               </>
             )}
+
             <InputField
               name="email"
-              placeholder="Enter your email"
               label="Email"
               error={state.error.email}
-              defaultValue={state.values.email}
-              autoComplete="email"
             />
+
             <InputField
               name="password"
               type="password"
-              placeholder="Enter your password"
               label="Password"
               error={state.error.password}
-              defaultValue={state.values.password}
-              autoComplete="off"
             />
-            <InputField name="formType" defaultValue={formType} hidden={true} />
+
+            <InputField name="formType" defaultValue={formType} hidden />
           </Row>
-          <div className="d-flex align-items-center justify-content-between mt-3 font-14">
-            {submitBtnLabel?.trim() && (
+
+          <div className="d-flex justify-content-between mt-3">
+            {submitBtnLabel && (
               <Button type="submit" disabled={isPending}>
                 {submitBtnLabel}
               </Button>
             )}
-            {btnLabel?.trim() && redirectUrl?.trim() && (
-              <Button onClick={onClick}>{btnLabel}</Button>
+            {btnLabel && redirectUrl && (
+              <Button onClick={() => router.push(redirectUrl)}>
+                {btnLabel}
+              </Button>
             )}
           </div>
         </Form>

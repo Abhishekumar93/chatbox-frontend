@@ -3,6 +3,7 @@
   align-items: center;
   gap: 0.25rem;
   width: 100%;
+  padding: 1.5rem 0;
 }
 
 .typing-indicator {
@@ -19,4 +20,41 @@
   @media (prefers-color-scheme: dark) {
     color: #f0f0f0;
   }
+}
+
+.chat-header {
+  padding: 0.5rem;
+  margin: 0 auto;
+  width: fit-content;
+  border-radius: 0.25rem;
+  box-shadow: 0 4px 8px rgba(104, 102, 102, 0.16);
+
+  @media (prefers-color-scheme: dark) {
+    box-shadow: 0 4px 8px rgba(226, 220, 220, 0.16);
+  }
+}
+
+.message-content {
+  margin-top: 1rem;
+  padding: 0.5rem 0.5rem 0.25rem;
+  border-radius: 0.25rem;
+  width: fit-content;
+  box-shadow: 0 4px 8px rgba(104, 102, 102, 0.16);
+
+  @media (prefers-color-scheme: dark) {
+    box-shadow: 0 4px 8px rgba(226, 220, 220, 0.16);
+  }
+}
+
+.timestamp {
+  font-size: 0.625rem;
+}
+
+.message-received {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.message-list {
+  overflow-y: auto;
 }

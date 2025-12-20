@@ -7,7 +7,8 @@ export const setLocalStorage = (key: string, value: any) => {
 };
 
 export const getLocalStorage = (key: string) => {
-  const value = localStorage?.getItem(key);
+  if(!localStorage || localStorage === undefined) return null;
+  const value = localStorage.getItem(key);
   if (!value) return '';
   return JSON.parse(value);
 };

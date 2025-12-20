@@ -6,8 +6,6 @@ const { LOGIN, REGISTER, MESSAGES } = ROUTE_URLS;
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
-  console.log(token, 'token from middleware');
-
   const publicRoutes = [LOGIN, REGISTER];
 
   const isPublicRoute = publicRoutes.some((route) =>
